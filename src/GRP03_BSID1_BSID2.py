@@ -82,7 +82,49 @@ class HiddenNeuronActivationAnalyzer:
 
         plt.suptitle(f"Top Activating Inputs for Hidden Neuron {neuron_index}")
         plt.show()
+class HiddenNeuronSelectivityAnalyzer:
+    def __init__(self, weights, biases):
+        self.W1 = weights[0]   # shape (20, 784)
+        self.b1 = biases[0]    # shape (20, 1)
 
+    def sigmoid(self, z):
+        return 1.0 / (1.0 + np.exp(-z))
+
+    def hidden_activations(self, x):
+        z = np.dot(self.W1, x) + self.b1
+        return self.sigmoid(z)
+
+    def average_activation_per_class(self, data, neuron_index):
+        """
+        Computes average activation of hidden neuron `neuron_index`
+        separately for each digit class 0–9.
+        """
+        sums = np.zeros(10)
+        counts = np.zeros(10)
+
+        for x, y in data:
+            a = self.hidden_activations(x)
+            activation_value = a[neuron_index, 0]
+
+            sums[y] += activation_value
+            counts[y] += 1
+
+        averages = sums / counts
+        return averages
+
+    def plot_activation_distribution(self, averages, neuron_index):
+        """
+        Plots bar chart of average activations across digit classes.
+        """
+        digits = np.arange(10)
+
+        plt.figure(figsize=(6, 4))
+        plt.bar(digits, averages)
+        plt.xlabel("Digit Class")
+        plt.ylabel("Average Activation")
+        plt.title(f"Activation Distribution for Hidden Neuron {neuron_index}")
+        plt.xticks(digits)
+        plt.show()
 
 def main():
     # Load model
@@ -91,8 +133,7 @@ def main():
     # Load MNIST test data
     _, _, test_data = mnist_loader.load_data_wrapper()
 
-    favorite_neuron = 7
-
+    favorite_neuron = 8
     # ---- Task 1 ----
     visualizer = HiddenNeuronVisualizer(weights)
     visualizer.plot_heatmap(favorite_neuron)
@@ -103,6 +144,15 @@ def main():
         test_data, favorite_neuron, top_k=8
     )
     analyzer.plot_top_activations(top_inputs, favorite_neuron)
+
+    # ---- Task 3 ----
+    selectivity = HiddenNeuronSelectivityAnalyzer(weights, biases)
+    averages = selectivity.average_activation_per_class(
+        test_data, favorite_neuron
+    )
+    selectivity.plot_activation_distribution(
+        averages, favorite_neuron
+    )
 
 
 if __name__ == "__main__":
